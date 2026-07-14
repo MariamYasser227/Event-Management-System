@@ -1,7 +1,16 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Settings, ChevronDown, Shield, Briefcase, User, Menu } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
 
-export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: null }, role = 'organizer', onRoleChange, onMenuClick }) {
-  const initials = user.name
+export default function TopBar({ title, user, role = 'organizer', onRoleChange, onMenuClick }) {
+  const { accounts, currentUser, setCurrentUser } = useAppContext();
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const navigate = useNavigate();
+
+  const activeUser = currentUser || user || accounts[2];
+
+  const initials = activeUser.name
     .split(' ')
     .map((n) => n[0])
     .join('')
@@ -12,6 +21,14 @@ export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: 
     const roles = ['admin', 'organizer', 'user'];
     const nextRoleIndex = (roles.indexOf(role) + 1) % roles.length;
     onRoleChange(roles[nextRoleIndex]);
+  };
+
+  const handleSwitchAccount = (acc) => {
+    setCurrentUser(acc);
+    if (acc.role === "admin") navigate("/admin/dashboard");
+    else if (acc.role === "user") navigate("/discover");
+    else navigate("/dashboard");
+    setShowProfileDropdown(false);
   };
 
   return (
@@ -71,12 +88,78 @@ export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: 
         <button className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
           <Settings size={17} />
         </button>
-        <button className="flex items-center gap-2 py-1 pl-2 pr-1 transition-colors rounded-lg hover:bg-gray-100">
-          <div className="flex items-center justify-center text-xs font-semibold text-white rounded-full w-7 h-7 bg-brand">
-            {initials}
-          </div>
-          <ChevronDown size={13} className="text-gray-400" />
-        </button>
+        
+        {/* Profile Dropdown Area */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            className="flex items-center gap-2 py-1 pl-2 pr-1 transition-colors rounded-lg hover:bg-gray-100"
+          >
+            <div className="flex items-center justify-center text-xs font-semibold text-white rounded-full w-7 h-7 bg-brand">
+              {initials}
+            </div>
+            <ChevronDown size={13} className="text-gray-400" />
+          </button>
+
+          {showProfileDropdown && (
+            <>
+              <div 
+                className="fixed inset-0 z-30 cursor-default" 
+                onClick={() => setShowProfileDropdown(false)} 
+              />
+              <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 z-40 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 pb-2 border-b border-gray-100 mb-2">
+                  <p className="text-xs font-bold text-gray-900 truncate">{activeUser.name}</p>
+                  <p className="text-[10px] text-gray-400 truncate mt-0.5">{activeUser.email}</p>
+                  <span className="inline-block mt-1.5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded-md bg-indigo-50 text-indigo-700">
+                    {activeUser.role}
+                  </span>
+                </div>
+                
+                <div className="px-3 py-1 mb-1">
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Switch Account</p>
+                </div>
+
+                <div className="space-y-1 px-2 max-h-60 overflow-y-auto">
+                  {accounts.map((acc) => {
+                    const isCurrent = acc.id === activeUser.id;
+                    const accInitials = acc.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase();
+                    
+                    return (
+                      <button
+                        key={acc.id}
+                        onClick={() => handleSwitchAccount(acc)}
+                        className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-all ${
+                          isCurrent 
+                            ? 'bg-indigo-50/70 border border-indigo-100 text-indigo-950 font-medium' 
+                            : 'hover:bg-gray-50 text-gray-700 border border-transparent'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white flex-shrink-0 ${
+                          acc.role === 'admin' ? 'bg-purple-600' : acc.role === 'organizer' ? 'bg-amber-500' : 'bg-blue-500'
+                        }`}>
+                          {accInitials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold truncate text-gray-800">{acc.name}</p>
+                            {isCurrent && <span className="w-1.5 h-1.5 bg-brand rounded-full" />}
+                          </div>
+                          <p className="text-[10px] text-gray-400 truncate mt-0.5">{acc.email}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

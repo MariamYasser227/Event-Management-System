@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -9,7 +9,9 @@ import {
 } from "lucide-react";
 import DesktopLayout from "../components/DesktopLayout";
 import { EventCardGrid } from "../components/EventCard";
-import { mockEvents } from "../data/mockData";
+import { useAppContext } from "../context/AppContext";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 const filters = ["All Events", "Tech", "Business", "Marketing", "Leadership"];
 
@@ -17,8 +19,27 @@ export default function EventDiscoveryPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All Events");
+  const { events } = useAppContext();
+  const containerRef = useRef(null);
 
-  const filteredEvents = mockEvents.filter((event) => {
+  useGSAP(() => {
+    gsap.from(".disco-card", {
+      opacity: 0,
+      y: 28,
+      duration: 0.5,
+      stagger: 0.07,
+      ease: "power2.out",
+    });
+    gsap.from(".disco-aside", {
+      opacity: 0,
+      x: 30,
+      duration: 0.6,
+      ease: "power2.out",
+      delay: 0.3,
+    });
+  }, { scope: containerRef });
+
+  const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (event.organizer &&
@@ -31,7 +52,7 @@ export default function EventDiscoveryPage() {
   });
 
   return (
-    <>
+    <div ref={containerRef}>
       <div className="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Discover Events</h1>
@@ -81,16 +102,17 @@ export default function EventDiscoveryPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEvents.map((event) => (
-              <EventCardGrid
-                key={event.id}
-                event={event}
-                onClick={() => navigate(`/event/${event.id}`)}
-              />
+              <div key={event.id} className="disco-card">
+                <EventCardGrid
+                  event={event}
+                  onClick={() => navigate(`/event/${event.id}`)}
+                />
+              </div>
             ))}
           </div>
         </div>
 
-        <aside className="flex-shrink-0 w-full space-y-4 xl:w-72">
+        <aside className="disco-aside flex-shrink-0 w-full space-y-4 xl:w-72">
           <div className="overflow-hidden card">
             <div className="relative flex items-center justify-center h-40 bg-gradient-to-br from-blue-100 to-indigo-200">
               <div className="text-center">
@@ -133,7 +155,7 @@ export default function EventDiscoveryPage() {
               </button>
             </div>
             <div className="flex gap-3 pb-1 overflow-x-auto xl:flex-col xl:overflow-visible scrollbar-hide xl:pb-0">
-              {mockEvents.slice(0, 3).map((event) => (
+              {events.slice(0, 3).map((event) => (
                 <button
                   key={event.id}
                   onClick={() => navigate(`/event/${event.id}`)}
@@ -161,6 +183,6 @@ export default function EventDiscoveryPage() {
           </div>
         </aside>
       </div>
-    </>
+    </div>
   );
 }

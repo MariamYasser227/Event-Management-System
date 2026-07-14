@@ -1,20 +1,43 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Flame, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import DesktopLayout from '../components/DesktopLayout';
 import { EventCard, EventCardGrid } from '../components/EventCard';
-import { mockEvents } from '../data/mockData';
+import { useAppContext } from '../context/AppContext';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 
 const categories = ['All', 'Tech', 'Business', 'Marketing', 'Leadership', 'Startup'];
 
 export default function UserHomePage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const navigate = useNavigate();
-  const featured = mockEvents[3];
-  const upcoming = mockEvents.filter((e) => e.status !== 'CLOSED');
+  const { events } = useAppContext();
+  const featured = events[3] || events[0];
+  const upcoming = events.filter((e) => e.status !== 'CLOSED');
+  const containerRef = useRef(null);
+
+  useGSAP(() => {
+    // Hero banner slides up
+    gsap.from('.featured-hero', {
+      opacity: 0,
+      scale: 0.97,
+      duration: 0.7,
+      ease: 'power3.out',
+    });
+    // Event cards stagger in from below
+    gsap.from('.event-card-item', {
+      opacity: 0,
+      y: 28,
+      duration: 0.5,
+      stagger: 0.07,
+      ease: 'power2.out',
+      delay: 0.2,
+    });
+  }, { scope: containerRef });
 
   return (
-    <>
+    <div ref={containerRef}>
       {/* Page header */}
       <div className="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -62,7 +85,7 @@ export default function UserHomePage() {
         </div>
         {featured && (
           <div
-            className="relative overflow-hidden cursor-pointer rounded-2xl h-44 sm:h-56 md:h-64 lg:h-72"
+            className="featured-hero relative overflow-hidden cursor-pointer rounded-2xl h-44 sm:h-56 md:h-64 lg:h-72"
             onClick={() => navigate(`/event/${featured.id}`)}
           >
             <img src={featured.image} alt={featured.title} className="object-cover w-full h-full" />
@@ -97,16 +120,17 @@ export default function UserHomePage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">All Events</h2>
-            <span className="text-xs text-gray-400">{mockEvents.length} events</span>
+            <span className="text-xs text-gray-400">{events.length} events</span>
           </div>
           {/* Grid: 1 col mobile, 2 col sm, 3 col lg */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {mockEvents.map((event) => (
-              <EventCardGrid
-                key={event.id}
-                event={event}
-                onClick={() => navigate(`/event/${event.id}`)}
-              />
+            {events.map((event) => (
+              <div key={event.id} className="event-card-item">
+                <EventCardGrid
+                  event={event}
+                  onClick={() => navigate(`/event/${event.id}`)}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -142,6 +166,6 @@ export default function UserHomePage() {
           </div>
         </aside>
       </div>
-    </>
+    </div>
   );
 }

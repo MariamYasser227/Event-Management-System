@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   CheckCircle,
@@ -15,6 +15,10 @@ import {
   ClipboardList,
 } from "lucide-react";
 import Toast from "../components/Toast";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+
+import { useAppContext } from "../context/AppContext";
 
 const statusConfig = {
   Pending: { badge: "badge-warning", icon: Clock, color: "text-amber-600" },
@@ -37,10 +41,10 @@ const eventImagePresets = [
 export default function AdminRequestsPage() {
   const {
     events,
-    setEvents,
     requests,
-    setRequests,
-  } = useOutletContext();
+    approveRequest,
+    rejectRequest,
+  } = useAppContext();
 
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   
@@ -57,43 +61,35 @@ export default function AdminRequestsPage() {
     setToast({ show: true, message, type });
   };
 
+  const containerRef = useRef(null);
+
+  useGSAP(() => {
+    gsap.from(".req-summary-card", {
+      opacity: 0,
+      y: 20,
+      duration: 0.5,
+      stagger: 0.09,
+      ease: "power2.out",
+    });
+    gsap.from(".req-row", {
+      opacity: 0,
+      x: -16,
+      duration: 0.45,
+      stagger: 0.07,
+      ease: "power2.out",
+      delay: 0.35,
+    });
+  }, { scope: containerRef });
+
   // Approval logic - transitions state and adds event to global list
   const handleApproveRequest = (req) => {
-    // 1. Update Request status to Approved
-    setRequests((prev) =>
-      prev.map((r) => (r.id === req.id ? { ...r, status: "Approved" } : r))
-    );
-
-    // 2. Add dynamic new event
-    const newEventId = events.length > 0 ? Math.max(...events.map((e) => e.id)) + 1 : 1;
-    const randomPresetImage = eventImagePresets[newEventId % eventImagePresets.length];
-    
-    const newEvent = {
-      id: newEventId,
-      title: req.event,
-      date: req.dateProposed || "Nov 15, 2026, 06:00 PM",
-      registered: 0,
-      capacity: req.capacityProposed || 150,
-      status: "LIVE",
-      tag: "NEW EVENT",
-      image: randomPresetImage,
-      location: req.locationProposed || "Convention Center, Downtown",
-      price: req.priceProposed !== undefined ? req.priceProposed : 79.0,
-      description: req.descriptionProposed || `Welcome to ${req.event}. Organized by ${req.requester}. This event offers a unique platform to discuss recent trends, collaborate, and network with leading professionals in the field.`,
-      organizer: req.requester,
-      rating: 5.0,
-      reviews: 0,
-    };
-
-    setEvents((prev) => [newEvent, ...prev]);
+    approveRequest(req.id);
     triggerToast(`Request ${req.id} approved! Event "${req.event}" is now live.`, "success");
     setSelectedRequest(null);
   };
 
   const handleRejectRequest = (req) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === req.id ? { ...r, status: "Rejected" } : r))
-    );
+    rejectRequest(req.id);
     triggerToast(`Request ${req.id} has been rejected.`, "error");
     setSelectedRequest(null);
   };
@@ -134,7 +130,7 @@ export default function AdminRequestsPage() {
   };
 
   return (
-    <>
+    <div ref={containerRef}>
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Event Requests Queue</h1>
@@ -147,7 +143,7 @@ export default function AdminRequestsPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 mb-6 md:grid-cols-4">
         {summary.map(({ label, value, color }) => (
-          <div key={label} className={`card p-4 border-l-4 ${color}`}>
+          <div key={label} className={`req-summary-card card p-4 border-l-4 ${color}`}>
             <p className="text-2xl font-bold text-gray-900">{value}</p>
             <p className="text-xs text-gray-500 mt-0.5">{label}</p>
           </div>
@@ -221,7 +217,7 @@ export default function AdminRequestsPage() {
                 return (
                   <tr
                     key={req.id}
-                    className="transition-colors hover:bg-gray-50 group cursor-pointer"
+                    className="req-row transition-colors hover:bg-gray-50 group cursor-pointer"
                     onClick={() => setSelectedRequest(req)}
                   >
                     <td className="px-5 py-4 whitespace-nowrap">
@@ -439,6 +435,6 @@ export default function AdminRequestsPage() {
           onClose={() => setToast((prev) => ({ ...prev, show: false }))}
         />
       )}
-    </>
+    </div>
   );
 }

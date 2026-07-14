@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, useNavigate, useOutletContext } from "react-router-dom";
+import { useState, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Calendar,
   MapPin,
@@ -11,17 +11,48 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
-import { mockEvents } from "../data/mockData";
+import { useAppContext } from "../context/AppContext";
+import Toast from "../components/Toast";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 export default function EventDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(false);
-  const context = useOutletContext();
-  const role = context?.role || "user";
-  const events = context?.events || mockEvents;
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const containerRef = useRef(null);
+
+  const { role, events, registerForEvent, isRegistered } = useAppContext();
 
   const event = events.find((e) => e.id === Number(id));
+  const registered = event ? isRegistered(event.id) : false;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useGSAP(() => {
+    if (!event) return;
+    gsap.from(".event-hero-img", {
+      opacity: 0,
+      scale: 1.04,
+      duration: 0.8,
+      ease: "power3.out",
+    });
+    gsap.from(".event-side-panel", {
+      opacity: 0,
+      x: 30,
+      duration: 0.7,
+      ease: "power2.out",
+      delay: 0.25,
+    });
+    gsap.from(".event-content-block", {
+      opacity: 0,
+      y: 20,
+      duration: 0.55,
+      stagger: 0.1,
+      ease: "power2.out",
+      delay: 0.15,
+    });
+  }, { scope: containerRef, dependencies: [event?.id] });
 
   if (!event) {
     return (
@@ -53,7 +84,7 @@ export default function EventDetailsPage() {
     : "EV";
 
   return (
-    <>
+    <div ref={containerRef}>
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 mb-5 text-sm text-gray-500 transition-colors hover:text-gray-800"
@@ -63,7 +94,7 @@ export default function EventDetailsPage() {
 
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="flex-1 min-w-0">
-          <div className="relative h-48 mb-5 overflow-hidden rounded-2xl sm:h-64 md:h-80">
+          <div className="event-hero-img relative h-48 mb-5 overflow-hidden rounded-2xl sm:h-64 md:h-80">
             <img
               src={event.image}
               alt={event.title}
@@ -95,7 +126,7 @@ export default function EventDetailsPage() {
             </div>
           </div>
 
-          <div className="p-5 mb-4 card">
+          <div className="event-content-block p-5 mb-4 card">
             <h1 className="mb-2 text-xl font-bold text-gray-900 sm:text-2xl">
               {event.title}
             </h1>
@@ -208,7 +239,7 @@ export default function EventDetailsPage() {
           )}
         </div>
 
-        <aside className="flex-shrink-0 w-full lg:w-80">
+        <aside className="event-side-panel flex-shrink-0 w-full lg:w-80">
           <div className="p-5 card lg:sticky lg:top-4">
             <div className="mb-4">
               <p className="mb-1 text-xs text-gray-400">Price per seat</p>
@@ -219,14 +250,26 @@ export default function EventDetailsPage() {
 
             {role === "user" ? (
               <button
-                disabled={fillPercent >= 100}
-                className={`justify-center w-full py-3 mb-3 text-base ${fillPercent >= 100 ? "bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg" : "btn-primary"}`}
+                disabled={fillPercent >= 100 || registered}
+                onClick={() => {
+                  const res = registerForEvent(event.id);
+                  if (res.success) {
+                    setToast({ show: true, message: `Successfully registered for ${event.title}!`, type: "success" });
+                  } else {
+                    setToast({ show: true, message: res.message, type: "error" });
+                  }
+                }}
+                className={`justify-center w-full py-3 mb-3 text-base ${
+                  fillPercent >= 100 || registered
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg"
+                    : "btn-primary"
+                }`}
               >
-                {fillPercent >= 100 ? "Sold Out" : "Register Now →"}
+                {fillPercent >= 100 ? "Sold Out" : registered ? "Already Registered" : "Register Now →"}
               </button>
             ) : (
               <button
-                onClick={() => navigate("/manage-event")}
+                onClick={() => navigate(`/manage-event?id=${event.id}`)}
                 className="justify-center w-full py-3 mb-3 text-base font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
               >
                 Manage Event
@@ -257,6 +300,13 @@ export default function EventDetailsPage() {
           </div>
         </aside>
       </div>
-    </>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+        />
+      )}
+    </div>
   );
 }

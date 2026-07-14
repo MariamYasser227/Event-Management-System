@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -14,6 +15,8 @@ import {
   Compass,
   X,
 } from "lucide-react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 const organizerNav = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -39,10 +42,22 @@ const userNav = [
 
 export default function Sidebar({ role = "organizer", user, isOpen = false, onClose }) {
   const navigate = useNavigate();
+  const sidebarRef = useRef(null);
 
   let navItems = organizerNav;
   if (role === "admin") navItems = adminNav;
   if (role === "user") navItems = userNav;
+
+  useGSAP(() => {
+    gsap.from(".sidebar-nav-item", {
+      opacity: 0,
+      x: -16,
+      duration: 0.45,
+      stagger: 0.07,
+      ease: "power2.out",
+      delay: 0.1,
+    });
+  }, { scope: sidebarRef });
 
   const handleNavClick = () => {
     if (onClose) onClose();
@@ -50,6 +65,7 @@ export default function Sidebar({ role = "organizer", user, isOpen = false, onCl
 
   return (
     <aside
+      ref={sidebarRef}
       className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100 shadow-sm flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
@@ -90,10 +106,10 @@ export default function Sidebar({ role = "organizer", user, isOpen = false, onCl
             end={to === "/dashboard" || to === "/admin/dashboard"}
             onClick={handleNavClick}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              `sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  ? 'bg-indigo-50 text-brand'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`
             }
           >
@@ -111,7 +127,7 @@ export default function Sidebar({ role = "organizer", user, isOpen = false, onCl
         <button
           onClick={() => {
             handleNavClick();
-            navigate("/landing");
+            navigate("/signin");
           }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
         >

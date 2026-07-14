@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useAppContext } from "../context/AppContext";
 import {
   Users,
   CalendarCheck,
@@ -13,14 +14,16 @@ import {
   Search,
 } from "lucide-react";
 import Toast from "../components/Toast";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 export default function AdminDashboardPage() {
   const {
     events,
     requests,
     users,
-    setUsers,
-  } = useOutletContext();
+    updateUser,
+  } = useAppContext();
 
   // Toast state
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
@@ -37,6 +40,26 @@ export default function AdminDashboardPage() {
     taxRate: 5,
     allowRefunds: true,
   });
+
+  const containerRef = useRef(null);
+
+  useGSAP(() => {
+    gsap.from(".admin-stat-card", {
+      opacity: 0,
+      y: 24,
+      duration: 0.55,
+      stagger: 0.1,
+      ease: "power2.out",
+    });
+    gsap.from(".admin-section", {
+      opacity: 0,
+      y: 20,
+      duration: 0.55,
+      stagger: 0.12,
+      ease: "power2.out",
+      delay: 0.3,
+    });
+  }, { scope: containerRef });
 
   // Search/Filter for View All Users Modal
   const [userSearch, setUserSearch] = useState("");
@@ -101,19 +124,15 @@ export default function AdminDashboardPage() {
 
   // User Actions
   const handleToggleSuspend = (email) => {
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.email === email) {
-          const newStatus = u.status === "Suspended" ? "Active" : "Suspended";
-          triggerToast(
-            `User ${u.name} has been ${newStatus === "Suspended" ? "suspended" : "reactivated"}`,
-            newStatus === "Suspended" ? "warning" : "success"
-          );
-          return { ...u, status: newStatus };
-        }
-        return u;
-      })
-    );
+    const userToSuspend = users.find((u) => u.email === email);
+    if (userToSuspend) {
+      const newStatus = userToSuspend.status === "Suspended" ? "Active" : "Suspended";
+      updateUser(userToSuspend.id, { status: newStatus });
+      triggerToast(
+        `User ${userToSuspend.name} has been ${newStatus === "Suspended" ? "suspended" : "reactivated"}`,
+        newStatus === "Suspended" ? "warning" : "success"
+      );
+    }
   };
 
   const handleEditUserSubmit = (e) => {
@@ -121,16 +140,15 @@ export default function AdminDashboardPage() {
     const formData = new FormData(e.currentTarget);
     const updatedName = formData.get("name");
     const updatedEmail = formData.get("email");
-    const updatedRole = formData.get("role");
+    const updatedRole = formData.get("role").toLowerCase();
     const updatedStatus = formData.get("status");
 
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.email === editingUser.email
-          ? { ...u, name: updatedName, email: updatedEmail, role: updatedRole, status: updatedStatus }
-          : u
-      )
-    );
+    updateUser(editingUser.id, {
+      name: updatedName,
+      email: updatedEmail,
+      role: updatedRole,
+      status: updatedStatus,
+    });
 
     triggerToast(`Successfully updated user profile for ${updatedName}`);
     setEditingUser(null);
@@ -154,7 +172,7 @@ export default function AdminDashboardPage() {
   );
 
   return (
-    <>
+    <div ref={containerRef}>
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Admin Dashboard</h1>
@@ -175,7 +193,7 @@ export default function AdminDashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-6 lg:grid-cols-4 sm:gap-4">
         {stats.map(({ label, value, change, icon: Icon, color }) => (
-          <div key={label} className="p-4 card">
+          <div key={label} className="admin-stat-card p-4 card">
             <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center mb-3`}>
               <Icon size={17} />
             </div>
@@ -187,7 +205,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Chart + Alerts */}
-      <div className="grid grid-cols-1 gap-4 mb-5 lg:grid-cols-3 sm:gap-5">
+      <div className="admin-section grid grid-cols-1 gap-4 mb-5 lg:grid-cols-3 sm:gap-5">
         <div className="p-5 lg:col-span-2 card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">Platform Revenue Trend</h2>
@@ -527,6 +545,6 @@ export default function AdminDashboardPage() {
           onClose={() => setToast((prev) => ({ ...prev, show: false }))}
         />
       )}
-    </>
+    </div>
   );
 }

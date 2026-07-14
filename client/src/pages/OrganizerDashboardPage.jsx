@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
   Users,
@@ -11,6 +11,9 @@ import {
   X,
 } from "lucide-react";
 import Toast from "../components/Toast";
+import { useAppContext } from "../context/AppContext";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 // Presets for cover images
 const imagePresets = [
@@ -23,16 +26,37 @@ const imagePresets = [
 export default function OrganizerDashboardPage() {
   const navigate = useNavigate();
   const {
-    events,
-    requests,
-    setRequests,
-    user,
-  } = useOutletContext();
+    myEvents: events,
+    myRequests: requests,
+    createEventRequest,
+    currentUser: user,
+  } = useAppContext();
 
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [chartRange, setChartRange] = useState("Last 7 days");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const containerRef = useRef(null);
+
+  useGSAP(() => {
+    // Stat cards stagger in
+    gsap.from(".stat-card", {
+      opacity: 0,
+      y: 20,
+      duration: 0.5,
+      stagger: 0.08,
+      ease: "power2.out",
+    });
+    // Event rows slide in from left
+    gsap.from(".event-row", {
+      opacity: 0,
+      x: -20,
+      duration: 0.5,
+      stagger: 0.07,
+      ease: "power2.out",
+      delay: 0.3,
+    });
+  }, { scope: containerRef });
 
   const triggerToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -91,38 +115,30 @@ export default function OrganizerDashboardPage() {
   const handleCreateSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const title = formData.get("title");
-    const date = formData.get("date");
-    const time = formData.get("time");
+    const title    = formData.get("title");
+    const date     = formData.get("date");
+    const time     = formData.get("time");
     const location = formData.get("location");
-    const capacity = parseInt(formData.get("capacity")) || 100;
-    const price = parseFloat(formData.get("price")) || 0.0;
+    const capacity = parseInt(formData.get("capacity"))  || 100;
+    const price    = parseFloat(formData.get("price"))   || 0.0;
     const description = formData.get("description");
 
-    const newReqId = `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newRequest = {
-      id: newReqId,
-      event: title,
-      requester: user.org || "Organizer Org",
-      date: "Today",
-      status: "Pending",
-      // Details to carry over when approved:
+    const newReqId = createEventRequest({
+      title,
       dateProposed: `${date} · ${time}`,
-      capacityProposed: capacity,
-      priceProposed: price,
-      locationProposed: location,
-      descriptionProposed: description,
-      imageProposed: imagePresets[selectedImageIndex].url,
-    };
+      capacity,
+      price,
+      location,
+      description,
+      image: imagePresets[selectedImageIndex].url,
+    });
 
-    setRequests((prev) => [newRequest, ...prev]);
     setIsCreateOpen(false);
     triggerToast(`Event "${title}" submitted to Admin approval queue. ID: ${newReqId}`, "info");
   };
 
   return (
-    <>
+    <div ref={containerRef}>
       {/* Header */}
       <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -138,7 +154,7 @@ export default function OrganizerDashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-6 lg:grid-cols-4 sm:gap-4">
         {stats.map(({ label, value, change, icon: Icon, color }) => (
-          <div key={label} className="p-4 card">
+          <div key={label} className="stat-card p-4 card">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
                 <Icon size={17} />
@@ -254,7 +270,7 @@ export default function OrganizerDashboardPage() {
                 return (
                   <tr
                     key={e.id}
-                    className="transition-colors cursor-pointer hover:bg-gray-50"
+                    className="event-row transition-colors cursor-pointer hover:bg-gray-50"
                     onClick={() => navigate(`/manage-event?id=${e.id}`)}
                   >
                     <td className="px-5 py-3">
@@ -400,6 +416,6 @@ export default function OrganizerDashboardPage() {
           onClose={() => setToast((prev) => ({ ...prev, show: false }))}
         />
       )}
-    </>
+    </div>
   );
 }

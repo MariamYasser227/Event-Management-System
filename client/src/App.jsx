@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useNavigate, useOutletContext, useLocation } from "react-router-dom";
 import {
   BrowserRouter,
   Routes,
   Route,
   Navigate,
   Outlet,
-  useNavigate,
-  useOutletContext,
 } from "react-router-dom";
 import DesktopLayout from "./components/DesktopLayout";
 import LandingPage from "./pages/LandingPage";
+import SignInPage from "./pages/SignInPage";
+import SignUpPage from "./pages/SignUpPage";
 import UserHomePage from "./pages/UserHomePage";
 import EventDetailsPage from "./pages/EventDetailsPage";
 import MyRegistrationsPage from "./pages/MyRegistrationsPage";
@@ -18,154 +18,102 @@ import ManageEventPage from "./pages/ManageEventPage";
 import OrganizerDashboardPage from "./pages/OrganizerDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminRequestsPage from "./pages/AdminRequestsPage";
-import {
-  mockEvents,
-  mockRequests,
-  mockRegistrants,
-  mockFeedback,
-  mockUser,
-} from "./data/mockData";
+import DevPageSwitcher from "./components/DevPageSwitcher";
+import { AppProvider, useAppContext } from "./context/AppContext";
 
-const ProtectedRoute = ({ allowedRoles, currentRole }) => {
+// ── Protected route ────────────────────────────────────────────────────────────
+function ProtectedRoute({ allowedRoles }) {
+  const { role } = useAppContext();
   const context = useOutletContext();
-  if (!currentRole) return <Navigate to="/landing" replace />;
-  if (!allowedRoles.includes(currentRole)) {
-    if (currentRole === "admin")
-      return <Navigate to="/admin/dashboard" replace />;
-    if (currentRole === "user") return <Navigate to="/discover" replace />;
+  if (!role) return <Navigate to="/signin" replace />;
+  if (!allowedRoles.includes(role)) {
+    if (role === "admin")     return <Navigate to="/admin/dashboard" replace />;
+    if (role === "user")      return <Navigate to="/discover"        replace />;
     return <Navigate to="/dashboard" replace />;
   }
   return <Outlet context={context} />;
-};
+}
 
-function LayoutWrapper({
-  role,
-  setRole,
-  user,
-  events,
-  setEvents,
-  requests,
-  setRequests,
-  registrants,
-  setRegistrants,
-  feedback,
-  setFeedback,
-  users,
-  setUsers,
-}) {
+// ── Layout wrapper ─────────────────────────────────────────────────────────────
+function LayoutWrapper() {
   const navigate = useNavigate();
+  const { currentUser, setCurrentUser, role } = useAppContext();
 
   const handleRoleChange = (newRole) => {
-    setRole(newRole);
-    if (newRole === "admin") navigate("/admin/dashboard");
+    // Find first account of that role and switch to it
+    // (used by TopBar's quick role switcher button)
+    if (newRole === "admin")     navigate("/admin/dashboard");
     else if (newRole === "user") navigate("/discover");
-    else navigate("/dashboard");
+    else                         navigate("/dashboard");
   };
 
   return (
-    <DesktopLayout role={role} onRoleChange={handleRoleChange} user={user}>
-      <Outlet
-        context={{
-          role,
-          user,
-          events,
-          setEvents,
-          requests,
-          setRequests,
-          registrants,
-          setRegistrants,
-          feedback,
-          setFeedback,
-          users,
-          setUsers,
-        }}
-      />
+    <DesktopLayout role={role} onRoleChange={handleRoleChange} user={currentUser}>
+      <Outlet />
     </DesktopLayout>
   );
 }
 
+// ── App root ───────────────────────────────────────────────────────────────────
 export default function App() {
-  const [role, setRole] = useState("organizer");
-  const [user] = useState(mockUser);
-  const [events, setEvents] = useState(mockEvents);
-  const [requests, setRequests] = useState(mockRequests);
-  const [registrants, setRegistrants] = useState(mockRegistrants);
-  const [feedback, setFeedback] = useState(mockFeedback);
-  const [users, setUsers] = useState([
-    { name: "Jane Doe", email: "jane@corp.com", role: "Organizer", joined: "Oct 01", status: "Active" },
-    { name: "Alex Smith", email: "alex@startup.io", role: "Attendee", joined: "Sep 28", status: "Active" },
-    { name: "Michael Lee", email: "ml@org.net", role: "Admin", joined: "Sep 25", status: "Active" },
-    { name: "Sarah Johnson", email: "sarah@tech.com", role: "Organizer", joined: "Oct 03", status: "Pending" },
-    { name: "Tom Wilson", email: "tom@events.io", role: "Attendee", joined: "Oct 05", status: "Suspended" },
-  ]);
+  return (
+    <AppProvider>
+      <AppRoutes />
+    </AppProvider>
+  );
+}
+
+// Separate component so hooks can access AppContext that AppProvider creates
+function AppRoutes() {
+  const { currentUser, setCurrentUser, role } = useAppContext();
 
   return (
     <BrowserRouter>
       <Routes>
+        {/* ── Public routes ── */}
         <Route path="/landing" element={<LandingPage />} />
+        <Route path="/signin"  element={<SignInPage  />} />
+        <Route path="/signup"  element={<SignUpPage  />} />
 
-        <Route
-          element={
-            <LayoutWrapper
-              role={role}
-              setRole={setRole}
-              user={user}
-              events={events}
-              setEvents={setEvents}
-              requests={requests}
-              setRequests={setRequests}
-              registrants={registrants}
-              setRegistrants={setRegistrants}
-              feedback={feedback}
-              setFeedback={setFeedback}
-              users={users}
-              setUsers={setUsers}
-            />
-          }
-        >
+        {/* ── Authenticated layout ── */}
+        <Route element={<LayoutWrapper />}>
+          {/* Accessible by any authenticated role */}
           <Route path="/event/:id" element={<EventDetailsPage />} />
 
-          <Route
-            element={
-              <ProtectedRoute allowedRoles={["organizer"]} currentRole={role} />
-            }
-          >
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<OrganizerDashboardPage />} />
-            <Route path="/events" element={<EventDiscoveryPage />} />
-            <Route path="/manage-event" element={<ManageEventPage />} />
-            <Route path="/requests" element={<AdminRequestsPage />} />
-            <Route path="/venues" element={<EventDiscoveryPage />} />
-            <Route path="/reports" element={<OrganizerDashboardPage />} />
+          {/* Organizer-only routes */}
+          <Route element={<ProtectedRoute allowedRoles={["organizer"]} />}>
+            <Route path="/"              element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard"     element={<OrganizerDashboardPage />} />
+            <Route path="/events"        element={<EventDiscoveryPage />} />
+            <Route path="/manage-event"  element={<ManageEventPage />} />
+            <Route path="/requests"      element={<AdminRequestsPage />} />
+            <Route path="/venues"        element={<EventDiscoveryPage />} />
+            <Route path="/reports"       element={<OrganizerDashboardPage />} />
           </Route>
 
-          <Route
-            element={
-              <ProtectedRoute allowedRoles={["admin"]} currentRole={role} />
-            }
-          >
+          {/* Admin-only routes */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/admin/events" element={<EventDiscoveryPage />} />
-            <Route path="/admin/requests" element={<AdminRequestsPage />} />
-            <Route path="/admin/users" element={<AdminDashboardPage />} />
-            <Route path="/admin/reports" element={<OrganizerDashboardPage />} />
-            <Route path="/admin/settings" element={<AdminDashboardPage />} />
+            <Route path="/admin/events"    element={<EventDiscoveryPage />} />
+            <Route path="/admin/requests"  element={<AdminRequestsPage />} />
+            <Route path="/admin/users"     element={<AdminDashboardPage />} />
+            <Route path="/admin/reports"   element={<OrganizerDashboardPage />} />
+            <Route path="/admin/settings"  element={<AdminDashboardPage />} />
           </Route>
 
-          <Route
-            element={
-              <ProtectedRoute allowedRoles={["user"]} currentRole={role} />
-            }
-          >
-            <Route path="/home" element={<UserHomePage />} />
-            <Route path="/discover" element={<EventDiscoveryPage />} />
+          {/* User/attendee-only routes */}
+          <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
+            <Route path="/home"       element={<UserHomePage />} />
+            <Route path="/discover"   element={<EventDiscoveryPage />} />
             <Route path="/my-tickets" element={<MyRegistrationsPage />} />
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/landing" replace />} />
       </Routes>
+
+      {/* Global dev navigation (outside routes so it's always mounted) */}
+      <DevPageSwitcher />
     </BrowserRouter>
   );
 }
-

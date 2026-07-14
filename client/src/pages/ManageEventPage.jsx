@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   QrCode,
   Eye,
@@ -14,6 +14,9 @@ import {
   DollarSign,
 } from "lucide-react";
 import Toast from "../components/Toast";
+import { useAppContext } from "../context/AppContext";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 const statusStyle = {
   "Checked In": "badge-success",
@@ -39,15 +42,16 @@ export default function ManageEventPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {
-    events,
+    myEvents: events,
     setEvents,
     registrants,
     setRegistrants,
     feedback,
     setFeedback,
-  } = useOutletContext();
+  } = useAppContext();
 
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const containerRef = useRef(null);
   
   // Selected event calculation
   const eventId = searchParams.get("id");
@@ -59,6 +63,22 @@ export default function ManageEventPage() {
 
   // Local Tab States
   const [activeTab, setActiveTab] = useState("Details");
+
+  useGSAP(() => {
+    gsap.from(".manage-left", {
+      opacity: 0,
+      x: -24,
+      duration: 0.65,
+      ease: "power3.out",
+    });
+    gsap.from(".manage-right", {
+      opacity: 0,
+      x: 24,
+      duration: 0.65,
+      ease: "power3.out",
+      delay: 0.1,
+    });
+  }, { scope: containerRef, dependencies: [eventId] });
   
   // Modals state
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -320,7 +340,7 @@ export default function ManageEventPage() {
   });
 
   return (
-    <>
+    <div ref={containerRef}>
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 mb-4 text-xs text-gray-500">
         <button onClick={() => navigate("/dashboard")} className="transition-colors hover:text-brand">
@@ -349,7 +369,7 @@ export default function ManageEventPage() {
       {/* Main Grid */}
       <div className="flex flex-col gap-5 xl:flex-row">
         {/* Left Column */}
-        <div className="flex-1 min-w-0 space-y-5">
+        <div className="manage-left flex-1 min-w-0 space-y-5">
           {/* Capacity Stats Card */}
           <div className="p-5 card">
             <h2 className="mb-4 section-title">Capacity & Revenue Health</h2>
@@ -893,6 +913,6 @@ export default function ManageEventPage() {
           onClose={() => setToast((prev) => ({ ...prev, show: false }))}
         />
       )}
-    </>
+    </div>
   );
 }

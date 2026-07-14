@@ -1,5 +1,8 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, ArrowRight, CalendarCheck, Users, BarChart2, Shield } from 'lucide-react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 
 const features = [
   { icon: CalendarCheck, title: 'Event Management', desc: 'Create and manage events with powerful organizer tools' },
@@ -16,9 +19,31 @@ const roles = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const containerRef = useRef(null);
+
+  useGSAP(() => {
+    // Hero entry stagger
+    gsap.from(".animate-hero-item", {
+      opacity: 0,
+      y: 30,
+      duration: 0.8,
+      stagger: 0.15,
+      ease: "power2.out",
+    });
+
+    // Features entrance
+    gsap.from(".animate-feature-card", {
+      opacity: 0,
+      y: 25,
+      duration: 0.6,
+      stagger: 0.1,
+      ease: "power2.out",
+      delay: 0.6,
+    });
+  }, { scope: containerRef });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-brand-dark to-slate-900 text-white">
+    <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-slate-900 via-brand-dark to-slate-900 text-white">
       {/* Navbar */}
       <nav className="flex items-center justify-between px-8 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
@@ -31,7 +56,7 @@ export default function LandingPage() {
           <button className="text-sm text-white/70 hover:text-white transition-colors">Features</button>
           <button className="text-sm text-white/70 hover:text-white transition-colors">Pricing</button>
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/signin')}
             className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium backdrop-blur transition-colors"
           >
             Sign In
@@ -41,19 +66,19 @@ export default function LandingPage() {
 
       {/* Hero */}
       <div className="max-w-6xl mx-auto px-8 pt-16 pb-24 text-center">
-        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-4 py-1.5 text-xs font-medium mb-8 border border-white/10">
+        <div className="animate-hero-item inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-4 py-1.5 text-xs font-medium mb-8 border border-white/10">
           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           Now in Beta — Join 4,000+ event professionals
         </div>
-        <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
+        <h1 className="animate-hero-item text-5xl md:text-6xl font-extrabold leading-tight mb-6">
           The Complete
           <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent"> Event Management</span>
           <br />Platform
         </h1>
-        <p className="text-lg text-white/60 max-w-2xl mx-auto mb-10">
+        <p className="animate-hero-item text-lg text-white/60 max-w-2xl mx-auto mb-10">
           From discovery to check-in. EventLogix gives organizers, attendees, and admins everything they need to run world-class events.
         </p>
-        <div className="flex items-center justify-center gap-4 flex-wrap">
+        <div className="animate-hero-item flex items-center justify-center gap-4 flex-wrap">
           {roles.map(({ label, desc, path, color }) => (
             <button
               key={path}
@@ -75,7 +100,7 @@ export default function LandingPage() {
           {features.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-colors"
+              className="animate-feature-card bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-colors"
             >
               <div className="w-10 h-10 bg-amber-400/20 rounded-xl flex items-center justify-center mb-3">
                 <Icon size={18} className="text-amber-400" />
