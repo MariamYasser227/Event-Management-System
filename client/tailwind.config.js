@@ -20,9 +20,9 @@ export default {
           900: '#312e81',
         },
         brand: {
-          DEFAULT: '#1E2875',
-          light: '#2D3A99',
-          dark: '#161E60',
+          DEFAULT: '#00236F',
+          light: '#1E3A8A',
+          dark: '#001340',
         },
         accent: {
           DEFAULT: '#F59E0B',
@@ -32,9 +32,14 @@ export default {
         warning: '#F59E0B',
         danger: '#EF4444',
         surface: {
-          DEFAULT: '#F8F9FD',
+          DEFAULT: '#F8F9FF',
           card: '#FFFFFF',
-          sidebar: '#F1F3F9',
+          sidebar: '#F8F9FF',
+        },
+        figma: {
+          border: '#C5C5D3',
+          active: '#1E3A8A',
+          inactive: '#444651',
         }
       },
       fontFamily: {
