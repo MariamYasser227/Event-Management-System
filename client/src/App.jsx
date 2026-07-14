@@ -26,6 +26,7 @@ import {
 } from "./data/mockData";
 
 const ProtectedRoute = ({ allowedRoles, currentRole }) => {
+  const context = useOutletContext();
   if (!currentRole) return <Navigate to="/landing" replace />;
   if (!allowedRoles.includes(currentRole)) {
     if (currentRole === "admin")
@@ -33,7 +34,7 @@ const ProtectedRoute = ({ allowedRoles, currentRole }) => {
     if (currentRole === "user") return <Navigate to="/discover" replace />;
     return <Navigate to="/dashboard" replace />;
   }
-  return <Outlet />;
+  return <Outlet context={context} />;
 };
 
 function LayoutWrapper({
