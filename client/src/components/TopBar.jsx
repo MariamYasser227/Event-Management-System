@@ -1,6 +1,6 @@
-import { Bell, Search, Settings, ChevronDown } from 'lucide-react';
+import { Bell, Search, Settings, ChevronDown, Shield, Briefcase, User } from 'lucide-react';
 
-export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: null } }) {
+export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: null }, role = 'organizer', onRoleChange }) {
   const initials = user.name
     .split(' ')
     .map((n) => n[0])
@@ -8,15 +8,20 @@ export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: 
     .slice(0, 2)
     .toUpperCase();
 
+  const handleRoleSwitch = () => {
+    const roles = ['admin', 'organizer', 'user'];
+    const nextRoleIndex = (roles.indexOf(role) + 1) % roles.length;
+    onRoleChange(roles[nextRoleIndex]);
+  };
+
   return (
-    <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-5 flex-shrink-0">
-      {/* Left: search */}
+    <header className="flex items-center justify-between flex-shrink-0 px-5 bg-white border-b border-gray-100 h-14">
       <div className="flex items-center gap-4">
         {title && (
-          <h1 className="text-base font-semibold text-gray-900 hidden md:block">{title}</h1>
+          <h1 className="hidden text-base font-semibold text-gray-900 md:block">{title}</h1>
         )}
         <div className="relative hidden sm:block">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={14} className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" />
           <input
             type="text"
             placeholder="Search resources..."
@@ -25,8 +30,32 @@ export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: 
         </div>
       </div>
 
-      {/* Right: icons + avatar */}
       <div className="flex items-center gap-2">
+        {onRoleChange && (
+          <button
+            onClick={handleRoleSwitch}
+            className="flex items-center gap-1.5 px-3 py-1.5 mr-2 rounded-lg text-xs font-medium border transition-colors bg-white hover:bg-gray-50 border-gray-200 text-gray-700 w-36 justify-center"
+          >
+            {role === 'admin' && (
+              <>
+                <Shield size={14} className="text-primary-600" />
+                <span>Admin View</span>
+              </>
+            )}
+            {role === 'organizer' && (
+              <>
+                <Briefcase size={14} className="text-amber-600" />
+                <span>Organizer View</span>
+              </>
+            )}
+            {role === 'user' && (
+              <>
+                <User size={14} className="text-gray-500" />
+                <span>User View</span>
+              </>
+            )}
+          </button>
+        )}
         <button className="relative p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
           <Bell size={17} />
           <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
@@ -34,8 +63,8 @@ export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: 
         <button className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
           <Settings size={17} />
         </button>
-        <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-gray-100 transition-colors">
-          <div className="w-7 h-7 rounded-full bg-brand text-white text-xs font-semibold flex items-center justify-center">
+        <button className="flex items-center gap-2 py-1 pl-2 pr-1 transition-colors rounded-lg hover:bg-gray-100">
+          <div className="flex items-center justify-center text-xs font-semibold text-white rounded-full w-7 h-7 bg-brand">
             {initials}
           </div>
           <ChevronDown size={13} className="text-gray-400" />

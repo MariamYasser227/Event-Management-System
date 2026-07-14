@@ -1,49 +1,105 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LandingPage from './pages/LandingPage';
-import UserHomePage from './pages/UserHomePage';
-import EventDetailsPage from './pages/EventDetailsPage';
-import MyRegistrationsPage from './pages/MyRegistrationsPage';
-import EventDiscoveryPage from './pages/EventDiscoveryPage';
-import ManageEventPage from './pages/ManageEventPage';
-import OrganizerDashboardPage from './pages/OrganizerDashboardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import AdminRequestsPage from './pages/AdminRequestsPage';
+import { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+  useNavigate,
+} from "react-router-dom";
+import DesktopLayout from "./components/DesktopLayout";
+import LandingPage from "./pages/LandingPage";
+import UserHomePage from "./pages/UserHomePage";
+import EventDetailsPage from "./pages/EventDetailsPage";
+import MyRegistrationsPage from "./pages/MyRegistrationsPage";
+import EventDiscoveryPage from "./pages/EventDiscoveryPage";
+import ManageEventPage from "./pages/ManageEventPage";
+import OrganizerDashboardPage from "./pages/OrganizerDashboardPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminRequestsPage from "./pages/AdminRequestsPage";
 
-function App() {
+const ProtectedRoute = ({ allowedRoles, currentRole }) => {
+  if (!currentRole) return <Navigate to="/landing" replace />;
+  if (!allowedRoles.includes(currentRole)) {
+    if (currentRole === "admin")
+      return <Navigate to="/admin/dashboard" replace />;
+    if (currentRole === "user") return <Navigate to="/discover" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Outlet />;
+};
+
+function LayoutWrapper({ role, setRole, user }) {
+  const navigate = useNavigate();
+
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    if (newRole === "admin") navigate("/admin/dashboard");
+    else if (newRole === "user") navigate("/discover");
+    else navigate("/dashboard");
+  };
+
+  return (
+    <DesktopLayout role={role} onRoleChange={handleRoleChange} user={user}>
+      <Outlet context={{ role }} />
+    </DesktopLayout>
+  );
+}
+
+export default function App() {
+  const [role, setRole] = useState("organizer");
+  const user = { name: "Mariam Yasser", org: "EventLogix Global" };
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public landing */}
         <Route path="/landing" element={<LandingPage />} />
 
-        {/* App pages — all use single responsive AppLayout */}
-        <Route path="/" element={<OrganizerDashboardPage />} />
-        <Route path="/home" element={<UserHomePage />} />
-        <Route path="/events" element={<EventDiscoveryPage />} />
-        <Route path="/event/:id" element={<EventDetailsPage />} />
-        <Route path="/manage-event" element={<ManageEventPage />} />
-        <Route path="/registrations" element={<MyRegistrationsPage />} />
-        <Route path="/my-events" element={<MyRegistrationsPage />} />
-        <Route path="/requests" element={<AdminRequestsPage />} />
+        <Route
+          element={<LayoutWrapper role={role} setRole={setRole} user={user} />}
+        >
+          <Route path="/event/:id" element={<EventDetailsPage />} />
 
-        {/* Admin routes */}
-        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-        <Route path="/admin/requests" element={<AdminRequestsPage />} />
-        <Route path="/admin/events" element={<EventDiscoveryPage />} />
-        <Route path="/admin/users" element={<AdminDashboardPage />} />
-        <Route path="/admin/reports" element={<OrganizerDashboardPage />} />
-        <Route path="/admin/settings" element={<AdminDashboardPage />} />
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["organizer"]} currentRole={role} />
+            }
+          >
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<OrganizerDashboardPage />} />
+            <Route path="/events" element={<EventDiscoveryPage />} />
+            <Route path="/manage-event" element={<ManageEventPage />} />
+            <Route path="/requests" element={<AdminRequestsPage />} />
+            <Route path="/venues" element={<EventDiscoveryPage />} />
+            <Route path="/reports" element={<OrganizerDashboardPage />} />
+          </Route>
 
-        {/* Stubs */}
-        <Route path="/attendees" element={<MyRegistrationsPage />} />
-        <Route path="/venues" element={<EventDiscoveryPage />} />
-        <Route path="/reports" element={<OrganizerDashboardPage />} />
-        <Route path="/profile" element={<AdminDashboardPage />} />
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["admin"]} currentRole={role} />
+            }
+          >
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/events" element={<EventDiscoveryPage />} />
+            <Route path="/admin/requests" element={<AdminRequestsPage />} />
+            <Route path="/admin/users" element={<AdminDashboardPage />} />
+            <Route path="/admin/reports" element={<OrganizerDashboardPage />} />
+            <Route path="/admin/settings" element={<AdminDashboardPage />} />
+          </Route>
+
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["user"]} currentRole={role} />
+            }
+          >
+            <Route path="/home" element={<UserHomePage />} />
+            <Route path="/discover" element={<EventDiscoveryPage />} />
+            <Route path="/my-tickets" element={<MyRegistrationsPage />} />
+          </Route>
+        </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;
