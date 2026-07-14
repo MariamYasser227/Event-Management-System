@@ -6,6 +6,7 @@ import {
   Navigate,
   Outlet,
   useNavigate,
+  useOutletContext,
 } from "react-router-dom";
 import DesktopLayout from "./components/DesktopLayout";
 import LandingPage from "./pages/LandingPage";
