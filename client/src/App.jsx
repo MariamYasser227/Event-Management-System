@@ -17,6 +17,13 @@ import ManageEventPage from "./pages/ManageEventPage";
 import OrganizerDashboardPage from "./pages/OrganizerDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminRequestsPage from "./pages/AdminRequestsPage";
+import {
+  mockEvents,
+  mockRequests,
+  mockRegistrants,
+  mockFeedback,
+  mockUser,
+} from "./data/mockData";
 
 const ProtectedRoute = ({ allowedRoles, currentRole }) => {
   if (!currentRole) return <Navigate to="/landing" replace />;
@@ -29,7 +36,21 @@ const ProtectedRoute = ({ allowedRoles, currentRole }) => {
   return <Outlet />;
 };
 
-function LayoutWrapper({ role, setRole, user }) {
+function LayoutWrapper({
+  role,
+  setRole,
+  user,
+  events,
+  setEvents,
+  requests,
+  setRequests,
+  registrants,
+  setRegistrants,
+  feedback,
+  setFeedback,
+  users,
+  setUsers,
+}) {
   const navigate = useNavigate();
 
   const handleRoleChange = (newRole) => {
@@ -41,14 +62,40 @@ function LayoutWrapper({ role, setRole, user }) {
 
   return (
     <DesktopLayout role={role} onRoleChange={handleRoleChange} user={user}>
-      <Outlet context={{ role }} />
+      <Outlet
+        context={{
+          role,
+          user,
+          events,
+          setEvents,
+          requests,
+          setRequests,
+          registrants,
+          setRegistrants,
+          feedback,
+          setFeedback,
+          users,
+          setUsers,
+        }}
+      />
     </DesktopLayout>
   );
 }
 
 export default function App() {
   const [role, setRole] = useState("organizer");
-  const user = { name: "Mariam Yasser", org: "EventLogix Global" };
+  const [user] = useState(mockUser);
+  const [events, setEvents] = useState(mockEvents);
+  const [requests, setRequests] = useState(mockRequests);
+  const [registrants, setRegistrants] = useState(mockRegistrants);
+  const [feedback, setFeedback] = useState(mockFeedback);
+  const [users, setUsers] = useState([
+    { name: "Jane Doe", email: "jane@corp.com", role: "Organizer", joined: "Oct 01", status: "Active" },
+    { name: "Alex Smith", email: "alex@startup.io", role: "Attendee", joined: "Sep 28", status: "Active" },
+    { name: "Michael Lee", email: "ml@org.net", role: "Admin", joined: "Sep 25", status: "Active" },
+    { name: "Sarah Johnson", email: "sarah@tech.com", role: "Organizer", joined: "Oct 03", status: "Pending" },
+    { name: "Tom Wilson", email: "tom@events.io", role: "Attendee", joined: "Oct 05", status: "Suspended" },
+  ]);
 
   return (
     <BrowserRouter>
@@ -56,7 +103,23 @@ export default function App() {
         <Route path="/landing" element={<LandingPage />} />
 
         <Route
-          element={<LayoutWrapper role={role} setRole={setRole} user={user} />}
+          element={
+            <LayoutWrapper
+              role={role}
+              setRole={setRole}
+              user={user}
+              events={events}
+              setEvents={setEvents}
+              requests={requests}
+              setRequests={setRequests}
+              registrants={registrants}
+              setRegistrants={setRegistrants}
+              feedback={feedback}
+              setFeedback={setFeedback}
+              users={users}
+              setUsers={setUsers}
+            />
+          }
         >
           <Route path="/event/:id" element={<EventDetailsPage />} />
 
@@ -103,3 +166,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

@@ -19,8 +19,9 @@ export default function EventDetailsPage() {
   const [isLiked, setIsLiked] = useState(false);
   const context = useOutletContext();
   const role = context?.role || "user";
+  const events = context?.events || mockEvents;
 
-  const event = mockEvents.find((e) => e.id === Number(id));
+  const event = events.find((e) => e.id === Number(id));
 
   if (!event) {
     return (

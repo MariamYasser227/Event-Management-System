@@ -1,6 +1,6 @@
-import { Bell, Search, Settings, ChevronDown, Shield, Briefcase, User } from 'lucide-react';
+import { Bell, Search, Settings, ChevronDown, Shield, Briefcase, User, Menu } from 'lucide-react';
 
-export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: null }, role = 'organizer', onRoleChange }) {
+export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: null }, role = 'organizer', onRoleChange, onMenuClick }) {
   const initials = user.name
     .split(' ')
     .map((n) => n[0])
@@ -16,16 +16,24 @@ export default function TopBar({ title, user = { name: 'Mariam Yasser', avatar: 
 
   return (
     <header className="flex items-center justify-between flex-shrink-0 px-5 bg-white border-b border-gray-100 h-14">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors md:hidden"
+          >
+            <Menu size={20} />
+          </button>
+        )}
         {title && (
-          <h1 className="hidden text-base font-semibold text-gray-900 md:block">{title}</h1>
+          <h1 className="text-base font-semibold text-gray-900 truncate max-w-[120px] sm:max-w-none">{title}</h1>
         )}
         <div className="relative hidden sm:block">
           <Search size={14} className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" />
           <input
             type="text"
             placeholder="Search resources..."
-            className="pl-8 pr-3 py-1.5 text-sm bg-gray-100 border-0 rounded-full w-52 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:w-64 transition-all duration-200"
+            className="pl-8 pr-3 py-1.5 text-sm bg-gray-100 border-0 rounded-full w-40 sm:w-52 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:w-64 transition-all duration-200"
           />
         </div>
       </div>

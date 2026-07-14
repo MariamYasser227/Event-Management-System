@@ -2,7 +2,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarCheck,
-  Users,
   MapPin,
   BarChart2,
   HelpCircle,
@@ -13,6 +12,7 @@ import {
   UserCog,
   Ticket,
   Compass,
+  X,
 } from "lucide-react";
 
 const organizerNav = [
@@ -37,20 +37,38 @@ const userNav = [
   { to: "/my-tickets", icon: Ticket, label: "My Tickets" },
 ];
 
-export default function Sidebar({ role = "organizer", user }) {
+export default function Sidebar({ role = "organizer", user, isOpen = false, onClose }) {
   const navigate = useNavigate();
 
   let navItems = organizerNav;
   if (role === "admin") navItems = adminNav;
   if (role === "user") navItems = userNav;
 
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
-    <aside className="flex-col hidden w-64 min-h-screen bg-white border-r border-gray-100 shadow-sm md:flex">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-        <div className="flex items-center justify-center w-8 h-8 bg-indigo-900 rounded-lg">
-          <Zap size={16} className="text-white fill-white" />
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100 shadow-sm flex flex-col transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 bg-indigo-900 rounded-lg">
+            <Zap size={16} className="text-white fill-white" />
+          </div>
+          <span className="text-xl font-bold text-indigo-950">EventLogix</span>
         </div>
-        <span className="text-xl font-bold text-indigo-950">EventLogix</span>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 md:hidden"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {user && role !== "user" && (
@@ -70,6 +88,7 @@ export default function Sidebar({ role = "organizer", user }) {
             key={to}
             to={to}
             end={to === "/dashboard" || to === "/admin/dashboard"}
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -90,7 +109,10 @@ export default function Sidebar({ role = "organizer", user }) {
           <span>Help Center</span>
         </button>
         <button
-          onClick={() => navigate("/login")}
+          onClick={() => {
+            handleNavClick();
+            navigate("/landing");
+          }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 w-full transition-colors"
         >
           <LogOut size={18} />
@@ -99,4 +121,4 @@ export default function Sidebar({ role = "organizer", user }) {
       </div>
     </aside>
   );
-}
+}
